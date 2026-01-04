@@ -261,7 +261,7 @@ playground.addEventListener("mousemove", (e) => {
 
 // Scoring
 
-const playerDetail = document.querySelector(".player-details");
+const playerDetail = document.querySelector(".stats");
 let highScore = localStorage.getItem("highScore") || 0;
 let highScoreName = localStorage.getItem("highScoreName") || "Player";
 
