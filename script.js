@@ -268,6 +268,7 @@ let highScoreName = localStorage.getItem("highScoreName") || "Player";
 function renderStats() {
   playerDetail.innerHTML = `
     <h3 style="margin-bottom: 8px;">Stats</h3>
+    <p>Player Name: <strong>${highScoreName}</strong></p>
     <p>High Score: <strong>${highScore}</strong></p>
     <p>Best Time: <strong>${bestTime}s</strong></p>
   `;
