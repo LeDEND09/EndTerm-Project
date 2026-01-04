@@ -81,7 +81,7 @@ function triggerSmash() {
 
     // restore normal glow
     ball.style.boxShadow = "";
-  }, 700); // smash lasts 0.7 sec
+  }, 500); // smash lasts 0.7 sec
 }
 
 //ball appearence
