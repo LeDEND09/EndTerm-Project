@@ -210,7 +210,7 @@ body {
    ======================= */
 .paddle {
   position: absolute;
-  bottom: 10px;
+  bottom: 0px;
   width: 120px;
   height: 14px;
   border-radius: 8px;
