@@ -1,6 +1,7 @@
 const playground = document.querySelector(".play-ground");
 let smashActive = false;
 let smashTimeout = null;
+let timeScale = 1; // for higher speed
 
 //ball
 const ball = document.createElement("div");
@@ -31,7 +32,9 @@ const MAX_BASE_SPEED = 20;
 let score = 0;
 let currentTime = 0;
 let startTime = 0;
-let bestTime = Number(localStorage.getItem("bestTime")) || 0;
+let highScore = Number(localStorage.getItem("highScore")) || 0;
+let highScoreName = localStorage.getItem("highScoreName") || "Player";
+let bestScoreTime = Number(localStorage.getItem("bestScoreTime")) || 0;
 
 const scoreCounter = document.querySelector(".counter");
 const timerDisplay = document.querySelector(".timer");
@@ -50,12 +53,27 @@ function updateScore() {
   maybeTriggerSmash();
 }
 
+//slowDown Effect
+function maybeSlowDown() {
+  if (smashActive) return;
+  if (difficultyLevel < 5) return;
+
+  if (Math.random() < 0.004) {
+    timeScale = 0.6;
+
+    setTimeout(() => {
+      timeScale = 1;
+    }, 120);
+  }
+}
+
+
 //smash effect
 
 function maybeTriggerSmash() {
   if (smashActive) return;
 
-  let smashChance = 0;
+  let smashChance = 1;
   if (score >= 10 && score < 50) smashChance = 0.25;
   else if (score >= 50 && score < 75) smashChance = 0.4;
   else if (score >= 75 && score <= 100) smashChance = 0.65;
@@ -68,20 +86,24 @@ function maybeTriggerSmash() {
 
 function triggerSmash() {
   smashActive = true;
-
+  timeScale =1;
   const originalSpeed = Math.abs(ballSpeedY);
   const smashSpeed = originalSpeed + 6 + Math.random() * 4;
   ballSpeedY = smashSpeed;
+  ballSpeedY = Math.min(ballSpeedY, playgroundHeight * 0.035);
 
   ball.style.boxShadow = "0 0 25px red, 0 0 45px orange";
 
   smashTimeout = setTimeout(() => {
-    ballSpeedY = originalSpeed;
+    ballSpeedY = originalSpeed * 0.9;
     smashActive = false;
+    timeScale =1;
+    ball.style.transform = "scale(1.15)";
+    setTimeout(() => (ball.style.transform = ""), 80);
 
     // restore normal glow
     ball.style.boxShadow = "";
-  }, 500); // smash lasts 0.7 sec
+  }, 550); // smash lasts 0.7 sec
 }
 
 //ball appearence
@@ -94,7 +116,7 @@ document.addEventListener("keydown", (e) => {
 
       // lock the mouse inside playground while playing
       // this is pointer lock api
-      playground.requestPointerLock();
+      playground.requestPointerLock(); //pointer lock API
 
       ballSpeedX = Math.random() * 16 - 8;
       ballSpeedY = 3;
@@ -118,7 +140,7 @@ const ballHeight = ball.offsetHeight;
 let ballSpeedX = 0;
 let ballSpeedY = 3;
 const MAX_SPEED_Y = 9;
-const TOP_HIT_BOOST = 2; // small boost
+const TOP_HIT_BOOST = 1.8; // small boost
 
 let resetGame = () => {
   gameRunning = false;
@@ -133,20 +155,19 @@ let resetGame = () => {
   document.exitPointerLock();
   if (score > highScore) {
     highScore = score;
+    bestScoreTime = currentTime;
+
     highScoreName =
-      prompt("New High score ! Enter Your Name: ", highScoreName) ||
+      prompt("New High Score! Enter your name:", highScoreName) ||
       highScoreName;
 
     localStorage.setItem("highScore", highScore);
     localStorage.setItem("highScoreName", highScoreName);
+    localStorage.setItem("bestScoreTime", bestScoreTime);
 
     renderStats();
   }
 
-  if (currentTime > bestTime) {
-    bestTime = currentTime;
-    localStorage.setItem("bestTime", bestTime);
-  }
   timerDisplay.textContent = "00:00";
   smashActive = false;
   clearTimeout(smashTimeout);
@@ -170,8 +191,10 @@ function formatTime(seconds) {
 
 let gameLoop = () => {
   if (gameRunning) {
-    ballX += ballSpeedX;
-    ballY += ballSpeedY;
+    const prevBallY = ballY;
+    ballX += ballSpeedX * timeScale;
+    ballY += ballSpeedY * timeScale;
+    maybeSlowDown();// sudden slowdown effect;
     ball.style.left = ballX + "px";
     ball.style.top = ballY + "px";
 
@@ -201,21 +224,25 @@ let gameLoop = () => {
 
       // cap the speed
       if (ballSpeedY > MAX_SPEED_Y) {
-        ballSpeedY = MAX_SPEED_Y * 1.5;
+        ballSpeedY = MAX_SPEED_Y * 1.25;
       }
-      if (score >= 50) {
-        ballSpeedX *= 2;
-        ballSpeedY *= 2;
+      if (score >= 50 && !smashActive) {
+        ballSpeedX *= 1.5;
+        ballSpeedY *= 1.5;
         randomBallColor();
       }
+    }
+    if (smashActive) {
+      paddleX += ballSpeedX * 0.2;
     }
 
     //bouncing back
     if (
+      ballSpeedY > 0 &&
+      prevBallY + ballHeight <= paddleTop &&
       ballY + ballHeight >= paddleTop &&
       ballX + ballWidth >= paddleX &&
-      ballX <= paddleX + paddleWidth &&
-      ballSpeedY > 0
+      ballX <= paddleX + paddleWidth
     ) {
       ballY = paddleTop - ballHeight;
       ballSpeedY = -Math.min(Math.abs(ballSpeedY), MAX_SPEED_Y) * 1.1;
@@ -233,7 +260,6 @@ let gameLoop = () => {
   }
 
   requestAnimationFrame(gameLoop);
-  console.log(ballY);
 };
 gameLoop();
 
@@ -251,7 +277,7 @@ playground.addEventListener("mousemove", (e) => {
   paddleX += e.movementX;
 
   // clamp paddle
-  if (paddleX < 0) paddleX = 0;
+  if (paddleX < 0) paddleX = 5;
   if (paddleX > playgroundWidth - paddleWidth) {
     paddleX = playgroundWidth - paddleWidth;
   }
@@ -259,18 +285,15 @@ playground.addEventListener("mousemove", (e) => {
   paddle.style.left = paddleX + "px";
 });
 
-// Scoring
-
 const playerDetail = document.querySelector(".stats");
-let highScore = localStorage.getItem("highScore") || 0;
-let highScoreName = localStorage.getItem("highScoreName") || "Player";
 
 function renderStats() {
   playerDetail.innerHTML = `
     <h3 style="margin-bottom: 8px;">Stats</h3>
     <p>Player Name: <strong>${highScoreName}</strong></p>
     <p>High Score: <strong>${highScore}</strong></p>
-    <p>Best Time: <strong>${bestTime}s</strong></p>
+    <p>Best Time: <strong>${formatTime(bestScoreTime)}</strong></p>
+
   `;
 }
 
