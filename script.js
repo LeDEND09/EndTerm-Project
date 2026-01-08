@@ -71,7 +71,7 @@ function maybeSlowDown() {
 //smash effect
 
 function maybeTriggerSmash() {
-  if (smashActive) return;
+  if (smashActive || score < 10) return;
 
   let smashChance = 1;
   if (score >= 10 && score < 50) smashChance = 0.25;
@@ -90,7 +90,7 @@ function triggerSmash() {
   const originalSpeed = Math.abs(ballSpeedY);
   const smashSpeed = originalSpeed + 6 + Math.random() * 4;
   ballSpeedY = smashSpeed;
-  ballSpeedY = Math.min(ballSpeedY, playgroundHeight * 0.035);
+  ballSpeedY = Math.min(ballSpeedY, playgroundHeight * 0.35);
 
   ball.style.boxShadow = "0 0 25px red, 0 0 45px orange";
 
@@ -118,7 +118,7 @@ document.addEventListener("keydown", (e) => {
       // this is pointer lock api
       playground.requestPointerLock(); //pointer lock API
 
-      ballSpeedX = Math.random() * 16 - 8;
+      ballSpeedX = (Math.random() * 16 - 8)*1.5;
       ballSpeedY = 3;
 
       startTime = Date.now(); // starttime
